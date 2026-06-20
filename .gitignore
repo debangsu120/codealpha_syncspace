@@ -1,0 +1,46 @@
+# Dependencies
+node_modules/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Build output
+dist/
+dist-ssr/
+.output/
+build/
+.tanstack/
+.nitro/
+
+# IDE
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Uploads (user files, not source)
+server/uploads/*
+!server/uploads/.gitkeep
+
+# Wrangler / Cloudflare
+.wrangler/
+.dev.vars
+
+# Misc
+*.local
+coverage/
+.cache/
