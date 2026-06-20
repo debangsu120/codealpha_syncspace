@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect, useRef, useCallback } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import {
   Mic,
@@ -20,6 +20,7 @@ import {
   Plus,
   Pin,
   Loader2,
+  X,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { useRoom } from "@/lib/room";
@@ -91,6 +92,7 @@ function Room() {
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [screenShareStream, setScreenShareStream] = useState<MediaStream | null>(null);
 
+  const localStreamRef = useRef<MediaStream | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -101,6 +103,7 @@ function Room() {
     scrollToBottom();
   }, [messages]);
 
+  // Acquire media and store in ref + state; stop tracks on unmount
   useEffect(() => {
     let mounted = true;
     const getMedia = async () => {
@@ -109,16 +112,25 @@ function Room() {
           video: true,
           audio: true,
         });
-        if (mounted) setLocalStream(stream);
+        if (!mounted) {
+          stream.getTracks().forEach((t) => t.stop());
+          return;
+        }
+        localStreamRef.current = stream;
+        setLocalStream(stream);
       } catch {
         try {
           const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-          if (mounted) {
-            setLocalStream(stream);
-            toast.warning("Camera not available. Joining with audio only.");
+          if (!mounted) {
+            stream.getTracks().forEach((t) => t.stop());
+            return;
           }
+          localStreamRef.current = stream;
+          setLocalStream(stream);
+          toast.warning("Camera not available. Joining with audio only.");
         } catch {
           if (mounted) {
+            localStreamRef.current = null;
             setLocalStream(null);
             toast.error("No camera or microphone detected. You can still chat.");
           }
@@ -128,14 +140,13 @@ function Room() {
     getMedia();
     return () => {
       mounted = false;
+      localStreamRef.current?.getTracks().forEach((t) => t.stop());
+      localStreamRef.current = null;
     };
   }, []);
 
-  const { remoteStreams, toggleAudio, toggleVideo, shareScreen, stopScreenShare } = useWebRTC(
-    id || "",
-    localStream,
-    participants,
-  );
+  const { remoteStreams, toggleAudio, toggleVideo, shareScreen, stopScreenShare, cleanup } =
+    useWebRTC(id || "", localStream, participants);
 
   useEffect(() => {
     if (!id || !token) {
@@ -217,6 +228,8 @@ function Room() {
       if (id) leaveRoom(id);
       const socket = getSocket();
       if (socket) {
+        socket.off("connect");
+        socket.off("room_participants");
         socket.off("user_joined");
         socket.off("user_left");
         socket.off("chat_message");
@@ -226,12 +239,20 @@ function Room() {
 
   const handleLeave = useCallback(() => {
     if (id) leaveRoom(id);
-    localStream?.getTracks().forEach((t) => t.stop());
+    // Stop all media tracks via ref (always current)
+    localStreamRef.current?.getTracks().forEach((t) => t.stop());
+    localStreamRef.current = null;
+    setLocalStream(null);
+    // Stop screen share tracks
+    screenShareStream?.getTracks().forEach((t) => t.stop());
+    setScreenShareStream(null);
+    setSharing(false);
+    cleanup();
     disconnectSocket();
     setCurrentRoom(null);
     setParticipants([]);
     navigate({ to: "/dashboard" });
-  }, [id, navigate, setCurrentRoom, setParticipants, localStream]);
+  }, [id, navigate, setCurrentRoom, setParticipants, cleanup, screenShareStream]);
 
   const handleToggleShare = useCallback(async () => {
     if (sharing) {
@@ -258,16 +279,26 @@ function Room() {
   };
 
   const handleToggleMic = useCallback(() => {
+    if (!localStreamRef.current?.getAudioTracks().length) {
+      toast.error("No microphone available");
+      return;
+    }
     setMic((v) => {
-      toggleAudio(!v);
-      return !v;
+      const next = !v;
+      toggleAudio(next);
+      return next;
     });
   }, [toggleAudio]);
 
   const handleToggleCam = useCallback(() => {
+    if (!localStreamRef.current?.getVideoTracks().length) {
+      toast.error("No camera available");
+      return;
+    }
     setCam((v) => {
-      toggleVideo(!v);
-      return !v;
+      const next = !v;
+      toggleVideo(next);
+      return next;
     });
   }, [toggleVideo]);
 
@@ -338,7 +369,8 @@ function Room() {
           <div>
             <h1 className="text-sm font-semibold">{roomName || "Room"}</h1>
             <p className="text-xs text-muted-foreground">
-              {code} · {allParticipants.length} participant{allParticipants.length !== 1 ? "s" : ""}
+              {code} · {allParticipants.length} participant
+              {allParticipants.length !== 1 ? "s" : ""}
             </p>
           </div>
         </div>
@@ -358,24 +390,26 @@ function Room() {
           onClick={handleLeave}
           className="inline-flex items-center gap-2 rounded-xl bg-destructive px-3.5 py-2 text-sm font-medium text-white hover:bg-destructive/90"
         >
-          <Phone className="h-4 w-4 rotate-[135deg]" /> Leave
+          <Phone className="h-4 w-4 rotate-[135deg] hidden sm:inline" />
+          <span className="hidden sm:inline">Leave</span>
+          <Phone className="h-4 w-4 rotate-[135deg] sm:hidden" />
         </button>
       </header>
 
       {/* Body */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="relative flex flex-1 overflow-hidden">
         {/* Video grid */}
         <div className="relative flex-1 overflow-hidden">
           {sharing && screenShareStream ? (
             <div className="flex h-full flex-col">
               {/* Screen share takes full width */}
-              <div className="flex-1 p-4">
+              <div className="flex-1 p-2 sm:p-4">
                 <ScreenShareTile stream={screenShareStream} />
               </div>
               {/* Participants strip at bottom */}
-              <div className="flex gap-2 overflow-x-auto border-t border-border bg-surface/40 px-4 py-3">
+              <div className="flex gap-2 overflow-x-auto border-t border-border bg-surface/40 px-2 py-2 sm:px-4 sm:py-3">
                 {allParticipants.map((p, i) => (
-                  <div key={p.userId} className="h-28 w-40 shrink-0">
+                  <div key={p.userId} className="h-20 w-28 shrink-0 sm:h-28 sm:w-40">
                     <Tile
                       name={p.name}
                       initials={getInitials(p.name)}
@@ -391,7 +425,7 @@ function Room() {
               </div>
             </div>
           ) : (
-            <div className="grid h-full gap-3 p-4 grid-cols-1 sm:grid-cols-2">
+            <div className="grid h-full gap-2 p-2 grid-cols-1 sm:gap-3 sm:grid-cols-2 sm:p-4">
               {allParticipants.map((p, i) => (
                 <Tile
                   key={p.userId}
@@ -424,55 +458,135 @@ function Room() {
           />
         </div>
 
-        {/* Sidebar */}
-        {showSidebar && (
-          <motion.aside
-            initial={{ x: 40, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            transition={{ duration: 0.25, ease: "easeOut" }}
-            className="absolute inset-y-0 right-0 z-30 w-full flex-col border-l border-border bg-surface/60 backdrop-blur-xl sm:relative sm:w-[340px] lg:flex"
-          >
-            <div className="flex items-center justify-between border-b border-border px-2 py-2">
-              <div className="flex gap-1">
-                {(["chat", "participants", "files", "whiteboard"] as const).map((t) => (
-                  <button
-                    key={t}
-                    onClick={() => setTab(t)}
-                    className={`rounded-lg px-3 py-1.5 text-xs font-medium capitalize transition-colors ${
-                      tab === t
-                        ? "bg-card text-foreground"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {t}
-                  </button>
-                ))}
+        {/* Sidebar — desktop: side panel, mobile: bottom sheet */}
+        {/* Desktop sidebar */}
+        <AnimatePresence>
+          {showSidebar && (
+            <motion.aside
+              initial={{ x: 40, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: 40, opacity: 0 }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
+              className="hidden w-[340px] flex-col border-l border-border bg-surface/60 backdrop-blur-xl lg:flex"
+            >
+              <SidebarContent
+                tab={tab}
+                setTab={setTab}
+                messages={messages}
+                messageInput={messageInput}
+                setMessageInput={setMessageInput}
+                onSend={handleSendMessage}
+                currentUserId={user?.id}
+                allParticipants={allParticipants}
+                roomId={id}
+                onClose={() => setShowSidebar(false)}
+              />
+            </motion.aside>
+          )}
+        </AnimatePresence>
+
+        {/* Mobile sidebar — bottom sheet */}
+        <AnimatePresence>
+          {showSidebar && (
+            <motion.aside
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="absolute inset-x-0 bottom-0 z-30 flex h-[70vh] flex-col rounded-t-2xl border-t border-border bg-surface backdrop-blur-xl lg:hidden"
+            >
+              <div className="flex items-center justify-center pt-2">
+                <div className="h-1 w-10 rounded-full bg-border" />
               </div>
               <button
                 onClick={() => setShowSidebar(false)}
-                className="rounded-md px-2 py-1 text-xs text-muted-foreground hover:text-foreground"
+                className="absolute right-3 top-3 grid h-7 w-7 place-items-center rounded-full text-muted-foreground hover:bg-card hover:text-foreground"
               >
-                ✕
+                <X className="h-4 w-4" />
               </button>
-            </div>
-            <div className="flex-1 overflow-y-auto">
-              {tab === "chat" && (
-                <ChatPanel
-                  messages={messages}
-                  messageInput={messageInput}
-                  setMessageInput={setMessageInput}
-                  onSend={handleSendMessage}
-                  currentUserId={user?.id}
-                />
-              )}
-              {tab === "participants" && <ParticipantsPanel participants={allParticipants} />}
-              {tab === "files" && <FilesPanel roomId={id} />}
-              {tab === "whiteboard" && <WhiteboardPanel roomId={id} />}
-            </div>
-          </motion.aside>
-        )}
+              <SidebarContent
+                tab={tab}
+                setTab={setTab}
+                messages={messages}
+                messageInput={messageInput}
+                setMessageInput={setMessageInput}
+                onSend={handleSendMessage}
+                currentUserId={user?.id}
+                allParticipants={allParticipants}
+                roomId={id}
+                onClose={() => setShowSidebar(false)}
+              />
+            </motion.aside>
+          )}
+        </AnimatePresence>
       </div>
     </div>
+  );
+}
+
+function SidebarContent({
+  tab,
+  setTab,
+  messages,
+  messageInput,
+  setMessageInput,
+  onSend,
+  currentUserId,
+  allParticipants,
+  roomId,
+  onClose,
+}: {
+  tab: "chat" | "participants" | "files" | "whiteboard";
+  setTab: (t: "chat" | "participants" | "files" | "whiteboard") => void;
+  messages: MessageData[];
+  messageInput: string;
+  setMessageInput: (v: string) => void;
+  onSend: (e: React.FormEvent) => void;
+  currentUserId?: string;
+  allParticipants: { userId: string; name: string; me?: boolean; remoteStream?: MediaStream }[];
+  roomId?: string;
+  onClose: () => void;
+}) {
+  return (
+    <>
+      <div className="flex items-center justify-between border-b border-border px-2 py-2">
+        <div className="flex gap-1">
+          {(["chat", "participants", "files", "whiteboard"] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={`rounded-lg px-3 py-1.5 text-xs font-medium capitalize transition-colors ${
+                tab === t
+                  ? "bg-card text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+        <button
+          onClick={onClose}
+          className="hidden rounded-md px-2 py-1 text-xs text-muted-foreground hover:text-foreground lg:block"
+        >
+          ✕
+        </button>
+      </div>
+      <div className="flex-1 overflow-y-auto">
+        {tab === "chat" && (
+          <ChatPanel
+            messages={messages}
+            messageInput={messageInput}
+            setMessageInput={setMessageInput}
+            onSend={onSend}
+            currentUserId={currentUserId}
+          />
+        )}
+        {tab === "participants" && <ParticipantsPanel participants={allParticipants} />}
+        {tab === "files" && <FilesPanel roomId={roomId} />}
+        {tab === "whiteboard" && <WhiteboardPanel roomId={roomId} />}
+      </div>
+    </>
   );
 }
 
@@ -498,26 +612,30 @@ function Tile({
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
+    const el = videoRef.current;
+    if (!el) return;
     const stream = me ? localStream : remoteStream;
-    if (videoRef.current && stream) {
-      videoRef.current.srcObject = stream;
+    if (stream) {
+      el.srcObject = stream;
+    } else {
+      el.srcObject = null;
     }
   }, [me, localStream, remoteStream]);
 
-  const hasVideo = me ? myCam : !!remoteStream;
+  const showVideo = me ? myCam : !!remoteStream;
 
   return (
     <div
       className={`relative overflow-hidden rounded-[20px] border border-border bg-gradient-to-br ${hue}`}
     >
-      {(me ? myCam : true) && (remoteStream || me) ? (
+      {showVideo ? (
         <div className="absolute inset-0">
           <video
             ref={videoRef}
             autoPlay
             playsInline
             muted={me}
-            className="h-full w-full object-cover"
+            className="h-full w-full object-contain"
           />
           {!me && !remoteStream && (
             <div className="absolute inset-0 grid place-items-center bg-surface/80">
@@ -536,16 +654,17 @@ function Tile({
         </div>
       )}
 
-      <div className="absolute bottom-3 left-3 inline-flex items-center gap-2 rounded-lg bg-black/55 px-2.5 py-1.5 text-xs font-medium backdrop-blur-md">
+      <div className="absolute bottom-2 left-2 inline-flex items-center gap-1.5 rounded-lg bg-black/55 px-2 py-1 text-[11px] font-medium backdrop-blur-md sm:bottom-3 sm:left-3 sm:gap-2 sm:px-2.5 sm:py-1.5 sm:text-xs">
         {myMic ? (
           <Mic className="h-3 w-3 text-primary" />
         ) : (
           <MicOff className="h-3 w-3 text-destructive" />
         )}
-        {name} {me && <span className="text-muted-foreground">(you)</span>}
+        <span className="max-w-[80px] truncate">{name}</span>
+        {me && <span className="text-muted-foreground">(you)</span>}
       </div>
-      <button className="absolute bottom-3 right-3 grid h-8 w-8 place-items-center rounded-lg bg-black/55 text-muted-foreground backdrop-blur-md hover:text-foreground">
-        <Pin className="h-3.5 w-3.5" />
+      <button className="absolute bottom-2 right-2 grid h-7 w-7 place-items-center rounded-lg bg-black/55 text-muted-foreground backdrop-blur-md hover:text-foreground sm:bottom-3 sm:right-3 sm:h-8 sm:w-8">
+        <Pin className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
       </button>
     </div>
   );
@@ -555,9 +674,9 @@ function ScreenShareTile({ stream }: { stream: MediaStream }) {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
-    if (videoRef.current && stream) {
-      videoRef.current.srcObject = stream;
-    }
+    const el = videoRef.current;
+    if (!el) return;
+    el.srcObject = stream;
   }, [stream]);
 
   return (
@@ -595,10 +714,10 @@ function FloatingToolbar({
       initial={{ y: 40, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-      className="absolute bottom-5 left-1/2 z-20 -translate-x-1/2"
+      className="absolute bottom-3 left-1/2 z-20 -translate-x-1/2 sm:bottom-5"
     >
       <div
-        className="flex items-center gap-1 rounded-full border border-border p-1.5 shadow-2xl"
+        className="flex items-center gap-0.5 rounded-full border border-border p-1 shadow-2xl sm:gap-1 sm:p-1.5"
         style={{ background: "rgba(17,24,39,0.92)", backdropFilter: "blur(24px)" }}
       >
         <ToolBtn active={mic} onClick={onMic} title={mic ? "Mute" : "Unmute"} danger={!mic}>
@@ -636,9 +755,10 @@ function FloatingToolbar({
         <Divider />
         <button
           onClick={onLeave}
-          className="inline-flex h-10 items-center gap-2 rounded-full bg-destructive px-4 text-sm font-medium text-white transition-colors hover:bg-destructive/90"
+          className="inline-flex h-9 items-center gap-1.5 rounded-full bg-destructive px-3 text-xs font-medium text-white transition-colors hover:bg-destructive/90 sm:h-10 sm:gap-2 sm:px-4 sm:text-sm"
         >
-          <Phone className="h-4 w-4 rotate-[135deg]" /> Leave
+          <Phone className="h-4 w-4 rotate-[135deg]" />
+          <span className="hidden sm:inline">Leave</span>
         </button>
       </div>
     </motion.div>
@@ -661,7 +781,7 @@ function ToolBtn({
   share?: boolean;
 }) {
   const base =
-    "grid h-10 w-10 place-items-center rounded-full transition-all duration-200 ease-out";
+    "grid h-9 w-9 place-items-center rounded-full transition-all duration-200 ease-out sm:h-10 sm:w-10";
   const cls = danger
     ? "bg-destructive/20 text-destructive hover:bg-destructive/30"
     : share
@@ -676,7 +796,7 @@ function ToolBtn({
   );
 }
 function Divider() {
-  return <div className="mx-1 h-6 w-px bg-border" />;
+  return <div className="mx-0.5 h-5 w-px bg-border sm:mx-1 sm:h-6" />;
 }
 
 function ChatPanel({

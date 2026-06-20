@@ -1,6 +1,8 @@
 import { useRef, useCallback, useEffect, useState } from "react";
 import {
   getSocket,
+  joinRoom as socketJoinRoom,
+  leaveRoom as socketLeaveRoom,
   sendOffer,
   sendAnswer,
   sendIceCandidate,
@@ -25,6 +27,11 @@ export function useWebRTC(
 ) {
   const pcsRef = useRef<Map<string, RTCPeerConnection>>(new Map());
   const [remoteStreams, setRemoteStreams] = useState<Map<string, RemoteStream>>(new Map());
+  const localStreamRef = useRef<MediaStream | null>(null);
+
+  useEffect(() => {
+    localStreamRef.current = localStream;
+  }, [localStream]);
 
   const addRemoteStream = useCallback(
     (socketId: string, userId: string, name: string, stream: MediaStream) => {
@@ -53,9 +60,10 @@ export function useWebRTC(
       const pc = new RTCPeerConnection(ICE_SERVERS);
       pcsRef.current.set(socketId, pc);
 
-      if (localStream) {
-        localStream.getTracks().forEach((track) => {
-          pc.addTrack(track, localStream);
+      const stream = localStreamRef.current;
+      if (stream) {
+        stream.getTracks().forEach((track) => {
+          pc.addTrack(track, stream);
         });
       }
 
@@ -93,7 +101,7 @@ export function useWebRTC(
 
       return pc;
     },
-    [localStream, addRemoteStream, removeRemoteStream],
+    [addRemoteStream, removeRemoteStream],
   );
 
   useEffect(() => {
@@ -223,27 +231,22 @@ export function useWebRTC(
     });
   }, [localStream]);
 
-  const toggleAudio = useCallback(
-    (enabled: boolean) => {
-      localStream?.getAudioTracks().forEach((t) => {
-        t.enabled = enabled;
-      });
-    },
-    [localStream],
-  );
+  const toggleAudio = useCallback((enabled: boolean) => {
+    localStreamRef.current?.getAudioTracks().forEach((t) => {
+      t.enabled = enabled;
+    });
+  }, []);
 
-  const toggleVideo = useCallback(
-    (enabled: boolean) => {
-      localStream?.getVideoTracks().forEach((t) => {
-        t.enabled = enabled;
-      });
-    },
-    [localStream],
-  );
+  const toggleVideo = useCallback((enabled: boolean) => {
+    localStreamRef.current?.getVideoTracks().forEach((t) => {
+      t.enabled = enabled;
+    });
+  }, []);
 
   const stopScreenShare = useCallback(async () => {
-    if (!localStream) return;
-    const cameraTrack = localStream.getVideoTracks()[0];
+    const stream = localStreamRef.current;
+    if (!stream) return;
+    const cameraTrack = stream.getVideoTracks()[0];
 
     pcsRef.current.forEach((pc) => {
       const sender = pc.getSenders().find((s) => s.track?.kind === "video");
@@ -253,7 +256,7 @@ export function useWebRTC(
     });
 
     if (roomId) sendScreenShareEnded(roomId);
-  }, [localStream, roomId]);
+  }, [roomId]);
 
   const shareScreen = useCallback(async () => {
     try {
@@ -282,5 +285,11 @@ export function useWebRTC(
     }
   }, [roomId, stopScreenShare]);
 
-  return { remoteStreams, toggleAudio, toggleVideo, shareScreen, stopScreenShare };
+  const cleanup = useCallback(() => {
+    pcsRef.current.forEach((pc) => pc.close());
+    pcsRef.current.clear();
+    setRemoteStreams(new Map());
+  }, []);
+
+  return { remoteStreams, toggleAudio, toggleVideo, shareScreen, stopScreenShare, cleanup };
 }

@@ -10,8 +10,9 @@ import {
   Trash2,
   Minus,
   Plus,
+  ArrowLeft,
 } from "lucide-react";
-import { getSocket, sendDrawingEvent, sendClearBoard } from "@/lib/socket";
+import { getSocket, joinRoom, leaveRoom, sendDrawingEvent, sendClearBoard } from "@/lib/socket";
 
 export const Route = createFileRoute("/whiteboard")({
   head: () => ({
@@ -142,11 +143,27 @@ function Whiteboard() {
     return () => observer.disconnect();
   }, [strokes, redraw]);
 
+  // Join room for real-time sync, leave on unmount
   useEffect(() => {
     const socket = getSocket();
     if (!socket || !roomId) return;
 
-    const handleDrawing = ({ userId, strokeData }: { userId: string; strokeData: Stroke }) => {
+    let joined = false;
+
+    const doJoin = () => {
+      if (!joined && socket.connected) {
+        joined = true;
+        joinRoom(roomId);
+      }
+    };
+
+    // Join immediately if connected, or wait for connect
+    if (socket.connected) {
+      doJoin();
+    }
+    socket.on("connect", doJoin);
+
+    const handleDrawing = ({ strokeData }: { userId: string; strokeData: Stroke }) => {
       setStrokes((prev) => [...prev, strokeData]);
     };
 
@@ -159,8 +176,12 @@ function Whiteboard() {
     socket.on("clear_board", handleClear);
 
     return () => {
+      socket.off("connect", doJoin);
       socket.off("drawing_event", handleDrawing);
       socket.off("clear_board", handleClear);
+      if (joined) {
+        leaveRoom(roomId);
+      }
     };
   }, [roomId]);
 
@@ -272,25 +293,35 @@ function Whiteboard() {
   return (
     <div className="relative h-screen overflow-hidden bg-[#1a1a2e]">
       {/* Top bar */}
-      <div className="absolute left-0 right-0 top-0 z-10 flex items-center justify-between border-b border-border bg-surface/60 px-6 py-3 backdrop-blur-xl">
-        <div>
-          <h1 className="text-sm font-semibold text-foreground">Whiteboard</h1>
-          <p className="text-xs text-muted-foreground">
-            {strokes.length} stroke{strokes.length !== 1 ? "s" : ""}
-          </p>
+      <div className="absolute left-0 right-0 top-0 z-10 flex items-center justify-between border-b border-border bg-surface/60 px-4 py-2 backdrop-blur-xl sm:px-6 sm:py-3">
+        <div className="flex items-center gap-3">
+          {roomId && (
+            <button
+              onClick={() => window.history.back()}
+              className="grid h-8 w-8 place-items-center rounded-lg text-muted-foreground hover:bg-card hover:text-foreground"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </button>
+          )}
+          <div>
+            <h1 className="text-sm font-semibold text-foreground">Whiteboard</h1>
+            <p className="text-xs text-muted-foreground">
+              {strokes.length} stroke{strokes.length !== 1 ? "s" : ""}
+            </p>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2">
           {COLORS.map((c) => (
             <button
               key={c}
               onClick={() => setColor(c)}
-              className={`h-6 w-6 rounded-full border-2 transition-transform ${
+              className={`h-5 w-5 rounded-full border-2 transition-transform sm:h-6 sm:w-6 ${
                 color === c ? "border-foreground scale-110" : "border-transparent"
               }`}
               style={{ backgroundColor: c }}
             />
           ))}
-          <div className="ml-2 flex items-center gap-1 rounded-lg border border-border bg-card px-2 py-1">
+          <div className="ml-1 flex items-center gap-1 rounded-lg border border-border bg-card px-1.5 py-1 sm:ml-2 sm:px-2">
             <Minus className="h-3 w-3 text-muted-foreground" />
             <input
               type="range"
@@ -298,25 +329,19 @@ function Whiteboard() {
               max={20}
               value={size}
               onChange={(e) => setSize(Number(e.target.value))}
-              className="w-16 accent-[#6EEB83]"
+              className="w-12 accent-[#6EEB83] sm:w-16"
             />
             <Plus className="h-3 w-3 text-muted-foreground" />
-            <span className="ml-1 text-xs text-muted-foreground">{size}px</span>
+            <span className="ml-1 text-[10px] text-muted-foreground sm:text-xs">{size}px</span>
           </div>
         </div>
       </div>
 
       {/* Canvas */}
-      <div ref={containerRef} className="absolute inset-0 pt-[57px]">
+      <div ref={containerRef} className="absolute inset-0 pt-[52px] sm:pt-[57px]">
         <canvas
           ref={canvasRef}
-          className={`${
-            tool === "eraser"
-              ? "cursor-cell"
-              : tool === "pen"
-                ? "cursor-crosshair"
-                : "cursor-crosshair"
-          }`}
+          className={`${tool === "eraser" ? "cursor-cell" : "cursor-crosshair"}`}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
@@ -325,8 +350,8 @@ function Whiteboard() {
       </div>
 
       {/* Left toolbar */}
-      <div className="absolute left-5 top-1/2 z-20 -translate-y-1/2">
-        <div className="glass-strong flex flex-col items-center gap-1 rounded-2xl p-2">
+      <div className="absolute left-3 top-1/2 z-20 -translate-y-1/2 sm:left-5">
+        <div className="glass-strong flex flex-col items-center gap-0.5 rounded-2xl p-1.5 sm:gap-1 sm:p-2">
           {(
             [
               { id: "pen", icon: Pen, label: "Pen" },
@@ -339,7 +364,7 @@ function Whiteboard() {
               key={t.id}
               onClick={() => setTool(t.id)}
               title={t.label}
-              className={`grid h-10 w-10 place-items-center rounded-xl transition-colors ${
+              className={`grid h-9 w-9 place-items-center rounded-xl transition-colors sm:h-10 sm:w-10 ${
                 tool === t.id
                   ? "bg-primary text-primary-foreground"
                   : "text-muted-foreground hover:bg-card hover:text-foreground"
@@ -348,25 +373,25 @@ function Whiteboard() {
               <t.icon className="h-4 w-4" />
             </button>
           ))}
-          <div className="my-1 h-px w-6 bg-border" />
+          <div className="my-0.5 h-px w-5 bg-border sm:my-1 sm:w-6" />
           <button
             onClick={handleUndo}
             title="Undo"
-            className="grid h-10 w-10 place-items-center rounded-xl text-muted-foreground hover:bg-card hover:text-foreground"
+            className="grid h-9 w-9 place-items-center rounded-xl text-muted-foreground hover:bg-card hover:text-foreground sm:h-10 sm:w-10"
           >
             <Undo2 className="h-4 w-4" />
           </button>
           <button
             onClick={handleRedo}
             title="Redo"
-            className="grid h-10 w-10 place-items-center rounded-xl text-muted-foreground hover:bg-card hover:text-foreground"
+            className="grid h-9 w-9 place-items-center rounded-xl text-muted-foreground hover:bg-card hover:text-foreground sm:h-10 sm:w-10"
           >
             <Redo2 className="h-4 w-4" />
           </button>
           <button
             onClick={handleClear}
             title="Clear"
-            className="grid h-10 w-10 place-items-center rounded-xl text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+            className="grid h-9 w-9 place-items-center rounded-xl text-muted-foreground hover:bg-destructive/10 hover:text-destructive sm:h-10 sm:w-10"
           >
             <Trash2 className="h-4 w-4" />
           </button>
@@ -374,13 +399,13 @@ function Whiteboard() {
       </div>
 
       {/* Zoom controls */}
-      <div className="glass-strong absolute bottom-5 right-5 z-20 flex items-center gap-1 rounded-full p-1">
-        <button className="grid h-8 w-8 place-items-center rounded-full text-muted-foreground hover:bg-card hover:text-foreground">
-          <Minus className="h-4 w-4" />
+      <div className="glass-strong absolute bottom-4 right-4 z-20 flex items-center gap-1 rounded-full p-1 sm:bottom-5 sm:right-5">
+        <button className="grid h-7 w-7 place-items-center rounded-full text-muted-foreground hover:bg-card hover:text-foreground sm:h-8 sm:w-8">
+          <Minus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
         </button>
-        <span className="px-2 text-xs text-muted-foreground">100%</span>
-        <button className="grid h-8 w-8 place-items-center rounded-full text-muted-foreground hover:bg-card hover:text-foreground">
-          <Plus className="h-4 w-4" />
+        <span className="px-1.5 text-[10px] text-muted-foreground sm:px-2 sm:text-xs">100%</span>
+        <button className="grid h-7 w-7 place-items-center rounded-full text-muted-foreground hover:bg-card hover:text-foreground sm:h-8 sm:w-8">
+          <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
         </button>
       </div>
     </div>
