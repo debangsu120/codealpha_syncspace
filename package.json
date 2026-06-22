@@ -1,16 +1,19 @@
 {
   "name": "syncspace",
   "version": "1.0.0",
-  "description": "SyncSpace - Real-time collaboration platform",
+  "private": true,
+  "description": "Real-time collaboration platform with video calls, whiteboard, chat, and file sharing",
   "scripts": {
     "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
     "dev:server": "cd server && npm run dev",
     "dev:client": "cd frontend && npm run dev",
+    "build": "cd frontend && npm run build:prod",
+    "start": "cd server && node server.js",
     "install:all": "cd server && npm install && cd ../frontend && npm install",
-    "build": "cd frontend && npm run build",
-    "start": "cd server && npm start"
+    "lint": "cd frontend && npm run lint",
+    "typecheck": "cd frontend && npx tsc --noEmit"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^9.1.0"
   }
 }

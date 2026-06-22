@@ -18,6 +18,11 @@ dist-ssr/
 build/
 .tanstack/
 .nitro/
+.vinxi/
+*.tsbuildinfo
+
+# Auto-generated
+frontend/src/routeTree.gen.ts
 
 # IDE
 .vscode/

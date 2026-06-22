@@ -6,9 +6,17 @@ import { initializeSocket } from "./sockets/index.js";
 import env from "./config/env.js";
 
 const httpServer = createServer(app);
+
+const allowedOrigins = [
+  env.CLIENT_URL,
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "http://localhost:3000",
+].filter(Boolean);
+
 const io = new Server(httpServer, {
   cors: {
-    origin: env.CLIENT_URL,
+    origin: allowedOrigins,
     methods: ["GET", "POST"],
     credentials: true,
   },

@@ -14,6 +14,8 @@ dist-ssr
 .vinxi
 .tanstack/**
 .nitro
+*.tsbuildinfo
+src/routeTree.gen.ts
 *.local
 
 # Wrangler / Cloudflare

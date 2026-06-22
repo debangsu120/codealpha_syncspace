@@ -71,13 +71,19 @@ const getRoom = async (req, res) => {
     }
 
     if (room.isPrivate) {
-      const { password } = req.query;
-      if (!password) {
-        return res.status(403).json({ message: "Password required", requiresPassword: true });
-      }
-      const isMatch = await bcrypt.compare(password, room.password);
-      if (!isMatch) {
-        return res.status(403).json({ message: "Incorrect password" });
+      const isParticipant = room.participants.some(
+        (p) => p._id?.toString() === req.user._id.toString() || p.toString() === req.user._id.toString(),
+      );
+      const isOwner = room.ownerId._id?.toString() === req.user._id.toString() || room.ownerId.toString() === req.user._id.toString();
+      if (!isParticipant && !isOwner) {
+        const { password } = req.query;
+        if (!password) {
+          return res.status(403).json({ message: "Password required", requiresPassword: true });
+        }
+        const isMatch = await bcrypt.compare(password, room.password);
+        if (!isMatch) {
+          return res.status(403).json({ message: "Incorrect password" });
+        }
       }
     }
 

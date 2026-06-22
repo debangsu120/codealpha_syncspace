@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: syncspace
+    runtime: node
+    plan: free
+    buildCommand: |
+      cd server && npm install
+      cd ../frontend && npm install && npm run build:prod
+    startCommand: cd server && node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CLIENT_URL
+        fromService:
+          name: syncspace
+          type: web
+          property: url
+      - key: PORT
+        value: 5000

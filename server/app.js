@@ -15,7 +15,10 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: false,
+}));
 
 const allowedOrigins = [
   process.env.CLIENT_URL,
@@ -45,6 +48,20 @@ app.use("/api/files", fileRoutes);
 
 app.get("/api/health", (req, res) => {
   res.status(200).json({ status: "ok" });
+});
+
+// Serve frontend build in production
+const clientDist = path.join(__dirname, "..", "frontend", "dist", "client");
+app.use(express.static(clientDist));
+
+// API 404 — return JSON, not the SPA shell
+app.all("/api/*", (req, res) => {
+  res.status(404).json({ message: `Route ${req.method} ${req.originalUrl} not found` });
+});
+
+// SPA fallback — all non-API routes serve index.html
+app.get("*", (req, res) => {
+  res.sendFile(path.join(clientDist, "index.html"));
 });
 
 app.use(errorHandler);

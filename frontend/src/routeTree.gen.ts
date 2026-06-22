@@ -8,167 +8,167 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from './routes/__root'
-import { Route as WhiteboardRouteImport } from './routes/whiteboard'
-import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
-import { Route as SettingsRouteImport } from './routes/settings'
-import { Route as RoomRouteImport } from './routes/room'
-import { Route as RegisterRouteImport } from './routes/register'
-import { Route as ProfileRouteImport } from './routes/profile'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as FilesRouteImport } from './routes/files'
-import { Route as DashboardRouteImport } from './routes/dashboard'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as MeetingsJoinRouteImport } from './routes/meetings.join'
-import { Route as MeetingsCreateRouteImport } from './routes/meetings.create'
+import { Route as rootRouteImport } from "./routes/__root"
+import { Route as WhiteboardRouteImport } from "./routes/whiteboard"
+import { Route as SitemapDotxmlRouteImport } from "./routes/sitemap[.]xml"
+import { Route as SettingsRouteImport } from "./routes/settings"
+import { Route as RoomRouteImport } from "./routes/room"
+import { Route as RegisterRouteImport } from "./routes/register"
+import { Route as ProfileRouteImport } from "./routes/profile"
+import { Route as LoginRouteImport } from "./routes/login"
+import { Route as FilesRouteImport } from "./routes/files"
+import { Route as DashboardRouteImport } from "./routes/dashboard"
+import { Route as IndexRouteImport } from "./routes/index"
+import { Route as MeetingsJoinRouteImport } from "./routes/meetings.join"
+import { Route as MeetingsCreateRouteImport } from "./routes/meetings.create"
 
 const WhiteboardRoute = WhiteboardRouteImport.update({
-  id: '/whiteboard',
-  path: '/whiteboard',
+  id: "/whiteboard",
+  path: "/whiteboard",
   getParentRoute: () => rootRouteImport,
 } as any)
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
-  id: '/sitemap.xml',
-  path: '/sitemap.xml',
+  id: "/sitemap.xml",
+  path: "/sitemap.xml",
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsRoute = SettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
+  id: "/settings",
+  path: "/settings",
   getParentRoute: () => rootRouteImport,
 } as any)
 const RoomRoute = RoomRouteImport.update({
-  id: '/room',
-  path: '/room',
+  id: "/room",
+  path: "/room",
   getParentRoute: () => rootRouteImport,
 } as any)
 const RegisterRoute = RegisterRouteImport.update({
-  id: '/register',
-  path: '/register',
+  id: "/register",
+  path: "/register",
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProfileRoute = ProfileRouteImport.update({
-  id: '/profile',
-  path: '/profile',
+  id: "/profile",
+  path: "/profile",
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
+  id: "/login",
+  path: "/login",
   getParentRoute: () => rootRouteImport,
 } as any)
 const FilesRoute = FilesRouteImport.update({
-  id: '/files',
-  path: '/files',
+  id: "/files",
+  path: "/files",
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardRoute = DashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
+  id: "/dashboard",
+  path: "/dashboard",
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+  id: "/",
+  path: "/",
   getParentRoute: () => rootRouteImport,
 } as any)
 const MeetingsJoinRoute = MeetingsJoinRouteImport.update({
-  id: '/meetings/join',
-  path: '/meetings/join',
+  id: "/meetings/join",
+  path: "/meetings/join",
   getParentRoute: () => rootRouteImport,
 } as any)
 const MeetingsCreateRoute = MeetingsCreateRouteImport.update({
-  id: '/meetings/create',
-  path: '/meetings/create',
+  id: "/meetings/create",
+  path: "/meetings/create",
   getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/dashboard': typeof DashboardRoute
-  '/files': typeof FilesRoute
-  '/login': typeof LoginRoute
-  '/profile': typeof ProfileRoute
-  '/register': typeof RegisterRoute
-  '/room': typeof RoomRoute
-  '/settings': typeof SettingsRoute
-  '/sitemap.xml': typeof SitemapDotxmlRoute
-  '/whiteboard': typeof WhiteboardRoute
-  '/meetings/create': typeof MeetingsCreateRoute
-  '/meetings/join': typeof MeetingsJoinRoute
+  "/": typeof IndexRoute
+  "/dashboard": typeof DashboardRoute
+  "/files": typeof FilesRoute
+  "/login": typeof LoginRoute
+  "/profile": typeof ProfileRoute
+  "/register": typeof RegisterRoute
+  "/room": typeof RoomRoute
+  "/settings": typeof SettingsRoute
+  "/sitemap.xml": typeof SitemapDotxmlRoute
+  "/whiteboard": typeof WhiteboardRoute
+  "/meetings/create": typeof MeetingsCreateRoute
+  "/meetings/join": typeof MeetingsJoinRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/dashboard': typeof DashboardRoute
-  '/files': typeof FilesRoute
-  '/login': typeof LoginRoute
-  '/profile': typeof ProfileRoute
-  '/register': typeof RegisterRoute
-  '/room': typeof RoomRoute
-  '/settings': typeof SettingsRoute
-  '/sitemap.xml': typeof SitemapDotxmlRoute
-  '/whiteboard': typeof WhiteboardRoute
-  '/meetings/create': typeof MeetingsCreateRoute
-  '/meetings/join': typeof MeetingsJoinRoute
+  "/": typeof IndexRoute
+  "/dashboard": typeof DashboardRoute
+  "/files": typeof FilesRoute
+  "/login": typeof LoginRoute
+  "/profile": typeof ProfileRoute
+  "/register": typeof RegisterRoute
+  "/room": typeof RoomRoute
+  "/settings": typeof SettingsRoute
+  "/sitemap.xml": typeof SitemapDotxmlRoute
+  "/whiteboard": typeof WhiteboardRoute
+  "/meetings/create": typeof MeetingsCreateRoute
+  "/meetings/join": typeof MeetingsJoinRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/dashboard': typeof DashboardRoute
-  '/files': typeof FilesRoute
-  '/login': typeof LoginRoute
-  '/profile': typeof ProfileRoute
-  '/register': typeof RegisterRoute
-  '/room': typeof RoomRoute
-  '/settings': typeof SettingsRoute
-  '/sitemap.xml': typeof SitemapDotxmlRoute
-  '/whiteboard': typeof WhiteboardRoute
-  '/meetings/create': typeof MeetingsCreateRoute
-  '/meetings/join': typeof MeetingsJoinRoute
+  "/": typeof IndexRoute
+  "/dashboard": typeof DashboardRoute
+  "/files": typeof FilesRoute
+  "/login": typeof LoginRoute
+  "/profile": typeof ProfileRoute
+  "/register": typeof RegisterRoute
+  "/room": typeof RoomRoute
+  "/settings": typeof SettingsRoute
+  "/sitemap.xml": typeof SitemapDotxmlRoute
+  "/whiteboard": typeof WhiteboardRoute
+  "/meetings/create": typeof MeetingsCreateRoute
+  "/meetings/join": typeof MeetingsJoinRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | '/'
-    | '/dashboard'
-    | '/files'
-    | '/login'
-    | '/profile'
-    | '/register'
-    | '/room'
-    | '/settings'
-    | '/sitemap.xml'
-    | '/whiteboard'
-    | '/meetings/create'
-    | '/meetings/join'
+    | "/"
+    | "/dashboard"
+    | "/files"
+    | "/login"
+    | "/profile"
+    | "/register"
+    | "/room"
+    | "/settings"
+    | "/sitemap.xml"
+    | "/whiteboard"
+    | "/meetings/create"
+    | "/meetings/join"
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/'
-    | '/dashboard'
-    | '/files'
-    | '/login'
-    | '/profile'
-    | '/register'
-    | '/room'
-    | '/settings'
-    | '/sitemap.xml'
-    | '/whiteboard'
-    | '/meetings/create'
-    | '/meetings/join'
+    | "/"
+    | "/dashboard"
+    | "/files"
+    | "/login"
+    | "/profile"
+    | "/register"
+    | "/room"
+    | "/settings"
+    | "/sitemap.xml"
+    | "/whiteboard"
+    | "/meetings/create"
+    | "/meetings/join"
   id:
-    | '__root__'
-    | '/'
-    | '/dashboard'
-    | '/files'
-    | '/login'
-    | '/profile'
-    | '/register'
-    | '/room'
-    | '/settings'
-    | '/sitemap.xml'
-    | '/whiteboard'
-    | '/meetings/create'
-    | '/meetings/join'
+    | "__root__"
+    | "/"
+    | "/dashboard"
+    | "/files"
+    | "/login"
+    | "/profile"
+    | "/register"
+    | "/room"
+    | "/settings"
+    | "/sitemap.xml"
+    | "/whiteboard"
+    | "/meetings/create"
+    | "/meetings/join"
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -186,89 +186,89 @@ export interface RootRouteChildren {
   MeetingsJoinRoute: typeof MeetingsJoinRoute
 }
 
-declare module '@tanstack/react-router' {
+declare module "@tanstack/react-router" {
   interface FileRoutesByPath {
-    '/whiteboard': {
-      id: '/whiteboard'
-      path: '/whiteboard'
-      fullPath: '/whiteboard'
+    "/whiteboard": {
+      id: "/whiteboard"
+      path: "/whiteboard"
+      fullPath: "/whiteboard"
       preLoaderRoute: typeof WhiteboardRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/sitemap.xml': {
-      id: '/sitemap.xml'
-      path: '/sitemap.xml'
-      fullPath: '/sitemap.xml'
+    "/sitemap.xml": {
+      id: "/sitemap.xml"
+      path: "/sitemap.xml"
+      fullPath: "/sitemap.xml"
       preLoaderRoute: typeof SitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/settings': {
-      id: '/settings'
-      path: '/settings'
-      fullPath: '/settings'
+    "/settings": {
+      id: "/settings"
+      path: "/settings"
+      fullPath: "/settings"
       preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/room': {
-      id: '/room'
-      path: '/room'
-      fullPath: '/room'
+    "/room": {
+      id: "/room"
+      path: "/room"
+      fullPath: "/room"
       preLoaderRoute: typeof RoomRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/register': {
-      id: '/register'
-      path: '/register'
-      fullPath: '/register'
+    "/register": {
+      id: "/register"
+      path: "/register"
+      fullPath: "/register"
       preLoaderRoute: typeof RegisterRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/profile': {
-      id: '/profile'
-      path: '/profile'
-      fullPath: '/profile'
+    "/profile": {
+      id: "/profile"
+      path: "/profile"
+      fullPath: "/profile"
       preLoaderRoute: typeof ProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
+    "/login": {
+      id: "/login"
+      path: "/login"
+      fullPath: "/login"
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/files': {
-      id: '/files'
-      path: '/files'
-      fullPath: '/files'
+    "/files": {
+      id: "/files"
+      path: "/files"
+      fullPath: "/files"
       preLoaderRoute: typeof FilesRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/dashboard': {
-      id: '/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
+    "/dashboard": {
+      id: "/dashboard"
+      path: "/dashboard"
+      fullPath: "/dashboard"
       preLoaderRoute: typeof DashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
+    "/": {
+      id: "/"
+      path: "/"
+      fullPath: "/"
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/meetings/join': {
-      id: '/meetings/join'
-      path: '/meetings/join'
-      fullPath: '/meetings/join'
+    "/meetings/join": {
+      id: "/meetings/join"
+      path: "/meetings/join"
+      fullPath: "/meetings/join"
       preLoaderRoute: typeof MeetingsJoinRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/meetings/create': {
-      id: '/meetings/create'
-      path: '/meetings/create'
-      fullPath: '/meetings/create'
+    "/meetings/create": {
+      id: "/meetings/create"
+      path: "/meetings/create"
+      fullPath: "/meetings/create"
       preLoaderRoute: typeof MeetingsCreateRouteImport
       parentRoute: typeof rootRouteImport
     }
@@ -292,13 +292,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

@@ -283,24 +283,25 @@ function Room() {
       toast.error("No microphone available");
       return;
     }
-    setMic((v) => {
-      const next = !v;
-      toggleAudio(next);
-      return next;
-    });
-  }, [toggleAudio]);
+    setMic((v) => !v);
+  }, []);
 
   const handleToggleCam = useCallback(() => {
     if (!localStreamRef.current?.getVideoTracks().length) {
       toast.error("No camera available");
       return;
     }
-    setCam((v) => {
-      const next = !v;
-      toggleVideo(next);
-      return next;
-    });
-  }, [toggleVideo]);
+    setCam((v) => !v);
+  }, []);
+
+  // Apply mic/cam state to tracks via useEffect (not inside state updater)
+  useEffect(() => {
+    toggleAudio(mic);
+  }, [mic, toggleAudio]);
+
+  useEffect(() => {
+    toggleVideo(cam);
+  }, [cam, toggleVideo]);
 
   const getInitials = (name: string) => {
     return name
